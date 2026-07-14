@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Calorie Journal</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Theme Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#F9F8F6',
+                        surface: '#FFFFFF',
+                        accent: '#F5A623', /* Sophisticated golden/orange */
+                        accentSoft: '#FFF2DF',
+                        textMain: '#1A1A1C',
+                        textSec: '#8E8E93',
+                        borderLight: '#E5E5EA'
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'ios': '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                        'inner-soft': 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Mobile & App Optimizations */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .bg-fixed-gradient {
+            background: linear-gradient(145deg, #F5F7FA 0%, #FFF8EE 50%, #FDF2F8 100%);
+            background-attachment: fixed;
+        }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        #food-input::placeholder { color: #C7C7CC; font-weight: 500; }
+        
+        .smooth-transition { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        
+        .input-focus-ring:focus-within .indicator-dot {
+            background-color: #F5A623;
+            box-shadow: 0 0 12px rgba(245, 166, 35, 0.4);
+            transform: scale(1.4);
+        }
+        
+        .settings-input {
+            width: 100%;
+            background: #F4F4F5;
+            border: 1.5px solid transparent;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1A1A1C;
+            outline: none;
+            transition: all 0.25s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .settings-input:focus {
+            border-color: #F5A623;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(245,166,35,0.1);
+        }
+        
+        /* Draggable handle styling */
+        .drag-handle { touch-action: pan-x; } 
+    </style>
+</head>
+<body class="bg-fixed-gradient text-textMain font-sans antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 cursor-text">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full flex justify-between items-center px-5 py-5 bg-transparent z-40">
+        <button id="insights-toggle" class="flex items-center justify-center bg-surface/90 backdrop-blur-xl border border-white/60 p-2.5 rounded-full shadow-sm hover:shadow-md transition-all active:scale-90 cursor-pointer" aria-label="Insights">
+            <i data-lucide="pie-chart" class="w-5 h-5 text-textSec"></i>
+        </button>
+        
+        <!-- Updated closer, grouped Date Navigation -->
+        <div id="date-nav-container" class="relative flex items-center justify-center h-10 w-48">
+            <button id="prev-day-btn" class="absolute left-0 opacity-0 translate-x-4 pointer-events-none bg-surface/90 backdrop-blur-xl border border-white/60 p-2 rounded-full text-textSec hover:text-textMain shadow-sm hover:shadow-md active:scale-90 smooth-transition cursor-pointer z-0">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button id="date-display-btn" class="relative z-10 bg-surface/90 backdrop-blur-xl border border-white/60 px-5 py-2 rounded-full text-[14px] font-bold text-textMain shadow-sm hover:shadow-md active:scale-95 smooth-transition cursor-pointer select-none min-w-[80px] text-center">
+                Today
+            </button>
+            <button id="next-day-btn" class="absolute right-0 opacity-0 -translate-x-4 pointer-events-none bg-surface/90 backdrop-blur-xl border border-white/60 p-2 rounded-full text-textSec hover:text-textMain shadow-sm hover:shadow-md active:scale-90 smooth-transition cursor-pointer z-0">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <button id="settings-toggle" class="flex items-center justify-center bg-surface/90 backdrop-blur-xl border border-white/60 p-2.5 rounded-full shadow-sm hover:shadow-md transition-all active:scale-90 cursor-pointer">
+            <div id="streak-container" class="hidden items-center gap-1.5 font-bold text-[14px] text-orange-500">
+                <span>🔥</span>
+                <span id="streak-counter">0</span>
+            </div>
+            <div id="streak-divider" class="hidden w-[1.5px] h-4 bg-borderLight mx-2.5"></div>
+            <i data-lucide="settings" class="w-5 h-5 text-textSec"></i>
+        </button>
+    </header>
+
+    <!-- Main Journal Area -->
+    <main id="journal-area" class="pt-28 pb-44 px-6 min-h-screen max-w-2xl mx-auto flex flex-col items-start w-full cursor-text">
+        <div id="entries-container" class="flex flex-col w-full gap-3">
+            <!-- Entries injected here -->
+        </div>
+
+        <div class="flex items-center w-full gap-4 mt-6 smooth-transition input-focus-ring group" id="input-row">
+            <div class="indicator-dot w-2 h-2 rounded-full bg-borderLight flex-shrink-0 smooth-transition"></div>
+            <input 
+                type="text" 
+                id="food-input" 
+                class="w-full bg-transparent border-none outline-none text-xl font-semibold text-textMain placeholder-textSec/50 caret-accent tracking-tight" 
+                placeholder="What did you eat?" 
+                autocomplete="off" 
+            />
+        </div>
+    </main>
+
+    <!-- Footer Ring -->
+    <div id="macro-ring-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[94%] max-w-[420px] bg-surface/85 backdrop-blur-2xl rounded-full shadow-ios z-40 flex items-center justify-between px-6 py-3.5 border border-white/80 cursor-default smooth-transition hover:-translate-y-1 duration-300">
+        <!-- Main Oval Background Outline -->
+        <svg width="100%" height="100%" class="absolute left-0 top-0 pointer-events-none rounded-full">
+            <rect x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="42" fill="none" stroke="#F2F2F7" stroke-width="3" />
+            <rect id="cal-ring" x="2" y="2" width="calc(100% - 4px)" height="calc(100% - 4px)" rx="42" fill="none" stroke="#F5A623" stroke-width="3" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" stroke-linecap="round" style="transition: stroke-dashoffset 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);" />
+        </svg>
+        
+        <div class="w-full flex justify-between items-center z-10">
+            <div class="flex flex-col pl-1">
+                <span class="text-[10px] font-extrabold text-textSec uppercase tracking-widest mb-0.5">Calories</span>
+                <div class="text-textMain font-bold text-[24px] leading-none tracking-tight">
+                    <span id="cal-count">0</span> <span class="text-[14px] text-textSec font-medium">/ <span id="cal-goal-display">2000</span></span>
+                </div>
+            </div>
+            
+            <!-- Macro Rings -->
+            <div class="flex gap-3">
+                <!-- Protein -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[9.5px] font-extrabold text-orange-500 mb-0.5">PRO</span>
+                    <div class="relative w-11 h-11 flex items-center justify-center">
+                        <svg width="100%" height="100%" class="absolute inset-0 -rotate-90">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="#F2F2F7" stroke-width="3" />
+                            <circle id="p-ring-svg" cx="22" cy="22" r="18" fill="none" stroke="#F97316" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" class="transition-all duration-1000 ease-out" />
+                        </svg>
+                        <span class="text-[11px] font-bold text-textMain" id="p-count">0g</span>
+                    </div>
+                </div>
+                <!-- Carbs -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[9.5px] font-extrabold text-purple-500 mb-0.5">CRB</span>
+                    <div class="relative w-11 h-11 flex items-center justify-center">
+                        <svg width="100%" height="100%" class="absolute inset-0 -rotate-90">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="#F2F2F7" stroke-width="3" />
+                            <circle id="c-ring-svg" cx="22" cy="22" r="18" fill="none" stroke="#A855F7" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" class="transition-all duration-1000 ease-out" />
+                        </svg>
+                        <span class="text-[11px] font-bold text-textMain" id="c-count">0g</span>
+                    </div>
+                </div>
+                <!-- Fat -->
+                <div class="flex flex-col items-center">
+                    <span class="text-[9.5px] font-extrabold text-teal-500 mb-0.5">FAT</span>
+                    <div class="relative w-11 h-11 flex items-center justify-center">
+                        <svg width="100%" height="100%" class="absolute inset-0 -rotate-90">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="#F2F2F7" stroke-width="3" />
+                            <circle id="f-ring-svg" cx="22" cy="22" r="18" fill="none" stroke="#14B8A6" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" class="transition-all duration-1000 ease-out" />
+                        </svg>
+                        <span class="text-[11px] font-bold text-textMain" id="f-count">0g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared Modal Backdrop -->
+    <div id="shared-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-md z-50 opacity-0 pointer-events-none transition-opacity duration-400 ease-out"></div>
+
+    <!-- Insights Bottom Sheet -->
+    <div id="insights-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
+        <!-- Drag down handle -->
+        <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
+            <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-7 pb-24">
+            <h2 class="text-3xl font-extrabold text-textMain mb-7 mt-2 tracking-tight">Insights</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-blue-50/80 border border-blue-100 rounded-3xl p-5 shadow-inner-soft flex flex-col justify-center">
+                    <span class="text-[11px] font-bold text-blue-700 uppercase tracking-widest mb-1.5">Avg Calories</span>
+                    <span class="text-3xl font-extrabold text-textMain" id="stat-avg-cal">0</span>
+                    <span class="text-xs font-semibold text-blue-800/70 mt-1">Daily Average</span>
+                </div>
+                <div class="bg-orange-50/80 border border-orange-100 rounded-3xl p-5 shadow-inner-soft flex flex-col justify-center">
+                    <span class="text-[11px] font-bold text-orange-700 uppercase tracking-widest mb-1.5">Entries Logged</span>
+                    <span class="text-3xl font-extrabold text-textMain" id="stat-total-entries">0</span>
+                    <span class="text-xs font-semibold text-orange-800/70 mt-1">All Time</span>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50/80 border border-emerald-100 rounded-3xl p-5 shadow-inner-soft mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-widest mb-1.5">Total Calories</span>
+                        <span class="text-4xl font-extrabold text-textMain tracking-tight" id="stat-total-cal">0 <span class="text-lg font-bold text-emerald-800/50">kcal</span></span>
+                        <span class="text-sm font-semibold text-emerald-800/70 mt-1">Tracked across all days</span>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-200/50 rounded-full flex items-center justify-center text-emerald-600">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full h-[1px] bg-borderLight mb-6"></div>
+            <p class="text-[13px] font-medium text-textSec text-center px-4 leading-relaxed">
+                Consistency is key! More advanced charts and data points will unlock as you build up your journal history.
+            </p>
+        </div>
+    </div>
+
+    <!-- Settings Bottom Sheet -->
+    <div id="settings-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
+        <!-- Drag down handle -->
+        <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
+            <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-7 pb-24">
+            <h2 class="text-3xl font-extrabold text-textMain mb-7 mt-2 tracking-tight">Your Profile</h2>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-textSec mb-2 ml-1">Name</label>
+                    <input type="text" id="set-name" class="settings-input" placeholder="How should we call you?">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-bold text-textSec mb-2 ml-1">Age</label>
+                        <input type="number" id="set-age" class="settings-input" placeholder="Years">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-textSec mb-2 ml-1">Sex</label>
+                        <select id="set-sex" class="settings-input appearance-none">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-textSec mb-2 ml-1">Weight (kg)</label>
+                        <input type="number" id="set-weight" class="settings-input" placeholder="e.g. 70">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-textSec mb-2 ml-1">Height (cm)</label>
+                        <input type="number" id="set-height" class="settings-input" placeholder="e.g. 175">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-textSec mb-2 ml-1">Activity Level</label>
+                    <select id="set-activity" class="settings-input appearance-none">
+                        <option value="1.2">Sedentary (Little/no exercise)</option>
+                        <option value="1.375">Light (Exercise 1-3 days)</option>
+                        <option value="1.55">Moderate (Exercise 3-5 days)</option>
+                        <option value="1.725">Active (Exercise 6-7 days)</option>
+                    </select>
+                </div>
+
+                <div class="pt-5 border-t border-borderLight/60 mt-4">
+                    <label class="block text-sm font-bold text-textSec mb-2 ml-1">Groq API Key (AI Engine)</label>
+                    <input type="password" id="set-api-key" class="settings-input text-sm" placeholder="gsk_...">
+                    <p class="text-[12px] font-medium text-textSec mt-2.5 ml-1">Locally encrypted. Defaults to embedded key if blank.</p>
+                </div>
+                
+                <div class="pt-5 mt-4 border-t border-borderLight/60">
+                    <h3 class="text-sm font-bold text-textSec mb-3 ml-1">Data Management</h3>
+                    <div class="flex gap-3">
+                        <button onclick="exportData()" class="flex-1 bg-surface border-[1.5px] border-borderLight text-textMain font-bold rounded-2xl py-3.5 hover:bg-bg active:scale-95 smooth-transition flex justify-center items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export
+                        </button>
+                        <button id="delete-data-btn" onclick="confirmDeleteData()" class="flex-1 bg-rose-50 border-[1.5px] border-rose-100 text-rose-600 font-bold rounded-2xl py-3.5 hover:bg-rose-100 active:scale-95 smooth-transition flex justify-center items-center gap-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-5 mt-4 border-t border-borderLight/60 flex flex-col gap-2.5 pb-8">
+                    <button class="w-full bg-surface border-[1.5px] border-borderLight text-textMain font-bold rounded-2xl py-3.5 hover:bg-bg active:scale-95 smooth-transition flex justify-between px-5 items-center gap-2">
+                        <div class="flex items-center gap-2.5"><i data-lucide="trello" class="w-4 h-4 text-textSec"></i> Feature Board</div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-textSec/50"></i>
+                    </button>
+                    <button class="w-full bg-surface border-[1.5px] border-borderLight text-textMain font-bold rounded-2xl py-3.5 hover:bg-bg active:scale-95 smooth-transition flex justify-between px-5 items-center gap-2">
+                        <div class="flex items-center gap-2.5"><i data-lucide="bug" class="w-4 h-4 text-textSec"></i> Bug Report</div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-textSec/50"></i>
+                    </button>
+                    <button class="w-full bg-surface border-[1.5px] border-borderLight text-textMain font-bold rounded-2xl py-3.5 hover:bg-bg active:scale-95 smooth-transition flex justify-between px-5 items-center gap-2">
+                        <div class="flex items-center gap-2.5"><i data-lucide="code" class="w-4 h-4 text-textSec"></i> Source Code</div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-textSec/50"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center text-[11px] font-bold text-textSec/50 pb-4">
+                    Version 1.0.1
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Food Details Bottom Sheet -->
+    <div id="food-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
+        <!-- Drag down handle -->
+        <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
+            <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
+        </div>
+        
+        <div id="food-sheet-content" class="flex-1 overflow-y-auto px-7 pb-24">
+            <!-- JS dynamically injects Food Info or Edit Form here -->
+        </div>
+    </div>
+
+    <!-- Quick Action Bar (Hidden by default, shown on keyboard focus) -->
+    <div id="quick-action-bar" class="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-borderLight px-6 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-between items-center z-50 transform translate-y-full transition-transform duration-300 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
+            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
+                <i data-lucide="bookmark" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold">Saved</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
+            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold">Camera</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
+            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
+                <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold">Barcode</span>
+        </button>
+        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
+            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
+                <i data-lucide="mic" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold">Voice</span>
+        </button>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        lucide.createIcons();
+
+        // --- App State & Data Management ---
+        const DEFAULT_GROQ_KEY = "";
+        
+        let appSettings = {
+            name: "", age: "", sex: "male", weight: "", height: "", activity: "1.2",
+            apiKey: DEFAULT_GROQ_KEY,
+            goals: { calories: 2000, protein: 120, carbs: 200, fat: 65 },
+            streakCount: 0,
+            lastStreakDate: null
+        };
+
+        let journalData = JSON.parse(localStorage.getItem('caloreJournalData')) || {}; 
+        let activeDate = new Date();
+        activeDate.setHours(0,0,0,0);
+
+        function loadSettings() {
+            const saved = localStorage.getItem('caloreSettings');
+            if (saved) {
+                appSettings = { ...appSettings, ...JSON.parse(saved) };
+                if (!appSettings.apiKey) appSettings.apiKey = DEFAULT_GROQ_KEY;
+            }
+            updateStreakDisplay();
+            document.getElementById('cal-goal-display').innerText = appSettings.goals.calories;
+        }
+        
+        function saveSettings() {
+            localStorage.setItem('caloreSettings', JSON.stringify(appSettings));
+            document.getElementById('cal-goal-display').innerText = appSettings.goals.calories;
+        }
+
+        function saveJournalData() {
+            localStorage.setItem('caloreJournalData', JSON.stringify(journalData));
+        }
+
+        function updateStreak(dateKey) {
+            const todayStr = getDateKey(new Date());
+            if (dateKey !== todayStr || appSettings.lastStreakDate === todayStr) return; 
+
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = getDateKey(yesterday);
+
+            if (appSettings.lastStreakDate === yesterdayStr) {
+                appSettings.streakCount++;
+            } else if (!appSettings.lastStreakDate || appSettings.lastStreakDate !== todayStr) {
+                appSettings.streakCount = 1;
+            }
+
+            appSettings.lastStreakDate = todayStr;
+            saveSettings();
+            updateStreakDisplay();
+        }
+
+        function updateStreakDisplay() {
+            const counterEl = document.getElementById('streak-counter');
+            const containerEl = document.getElementById('streak-container');
+            const dividerEl = document.getElementById('streak-divider');
+            const toggleBtn = document.getElementById('settings-toggle');
+
+            counterEl.innerText = appSettings.streakCount;
+
+            if (appSettings.streakCount > 0) {
+                containerEl.classList.remove('hidden');
+                containerEl.classList.add('flex');
+                dividerEl.classList.remove('hidden');
+                toggleBtn.classList.remove('p-2.5');
+                toggleBtn.classList.add('px-4', 'py-2');
+            } else {
+                containerEl.classList.add('hidden');
+                containerEl.classList.remove('flex');
+                dividerEl.classList.add('hidden');
+                toggleBtn.classList.remove('px-4', 'py-2');
+                toggleBtn.classList.add('p-2.5');
+            }
+        }
+
+        const getDateKey = (date) => {
+            const d = new Date(date);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().split('T')[0];
+        };
+        
+        const getDayData = (key) => {
+            if (!journalData[key]) {
+                journalData[key] = { macros: { calories: 0, protein: 0, carbs: 0, fat: 0 }, entriesHTML: '' };
+            }
+            return journalData[key];
+        };
+        
+        let currentDayData = null;
+
+        // DOM Elements
+        const foodInput = document.getElementById('food-input');
+        const entriesContainer = document.getElementById('entries-container');
+        
+        const dateDisplayBtn = document.getElementById('date-display-btn');
+        const prevDayBtn = document.getElementById('prev-day-btn');
+        const nextDayBtn = document.getElementById('next-day-btn');
+
+        const sharedBackdrop = document.getElementById('shared-backdrop');
+        const settingsSheet = document.getElementById('settings-sheet');
+        const insightsSheet = document.getElementById('insights-sheet');
+        const foodSheet = document.getElementById('food-sheet');
+        const macroRingContainer = document.getElementById('macro-ring-container');
+        const quickActionBar = document.getElementById('quick-action-bar');
+
+        // --- Drag-to-Close Sheet Logic ---
+        function closeAllSheets() {
+            sharedBackdrop.classList.remove('opacity-100', 'pointer-events-auto');
+            sharedBackdrop.classList.add('opacity-0', 'pointer-events-none');
+            
+            [settingsSheet, insightsSheet, foodSheet].forEach(sheet => {
+                sheet.classList.remove('translate-y-0');
+                sheet.classList.add('translate-y-full');
+            });
+        }
+
+        sharedBackdrop.addEventListener('click', closeAllSheets);
+
+        function setupDragToClose(sheetId) {
+            const sheet = document.getElementById(sheetId);
+            const handle = sheet.querySelector('.sheet-closer');
+            let startY = 0, currentY = 0, isDragging = false;
+
+            const onStart = (e) => {
+                startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                isDragging = true;
+                sheet.style.transition = 'none'; 
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                if (deltaY > 0) sheet.style.transform = `translateY(${deltaY}px)`;
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                sheet.style.transition = ''; 
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 80) closeAllSheets();
+                sheet.style.transform = ''; 
+                startY = 0; currentY = 0;
+            };
+
+            handle.addEventListener('touchstart', onStart, {passive: true});
+            document.addEventListener('touchmove', onMove, {passive: true});
+            document.addEventListener('touchend', onEnd);
+            handle.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+        }
+
+        setupDragToClose('settings-sheet');
+        setupDragToClose('insights-sheet');
+        setupDragToClose('food-sheet');
+
+        // --- Settings & Auto-Save Logic ---
+        function toggleSettings(open) {
+            if (open) {
+                document.getElementById('set-name').value = appSettings.name;
+                document.getElementById('set-age').value = appSettings.age;
+                document.getElementById('set-sex').value = appSettings.sex;
+                document.getElementById('set-weight').value = appSettings.weight;
+                document.getElementById('set-height').value = appSettings.height;
+                document.getElementById('set-activity').value = appSettings.activity;
+                document.getElementById('set-api-key').value = appSettings.apiKey === DEFAULT_GROQ_KEY ? "" : appSettings.apiKey;
+
+                sharedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+                sharedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+                settingsSheet.classList.remove('translate-y-full');
+                settingsSheet.classList.add('translate-y-0');
+            } else {
+                closeAllSheets();
+            }
+        }
+
+        document.getElementById('settings-toggle').addEventListener('click', (e) => { e.stopPropagation(); toggleSettings(true); });
+
+        // Auto Save Inputs
+        function calculateAndSaveSettings() {
+            appSettings.name = document.getElementById('set-name').value;
+            appSettings.age = document.getElementById('set-age').value;
+            appSettings.sex = document.getElementById('set-sex').value;
+            appSettings.weight = document.getElementById('set-weight').value;
+            appSettings.height = document.getElementById('set-height').value;
+            appSettings.activity = document.getElementById('set-activity').value;
+            
+            const keyInput = document.getElementById('set-api-key').value.trim();
+            appSettings.apiKey = keyInput || DEFAULT_GROQ_KEY;
+
+            if (appSettings.weight && appSettings.height && appSettings.age) {
+                let w = parseFloat(appSettings.weight);
+                let h = parseFloat(appSettings.height);
+                let a = parseFloat(appSettings.age);
+                let bmr = (10 * w) + (6.25 * h) - (5 * a) + (appSettings.sex === 'male' ? 5 : -161);
+                let tdee = Math.round(bmr * parseFloat(appSettings.activity));
+                
+                appSettings.goals.calories = tdee;
+                appSettings.goals.protein = Math.round((tdee * 0.3) / 4); 
+                appSettings.goals.carbs = Math.round((tdee * 0.4) / 4);   
+                appSettings.goals.fat = Math.round((tdee * 0.3) / 9);     
+            }
+
+            saveSettings();
+            updateTotalsDisplay();
+        }
+
+        document.querySelectorAll('.settings-input').forEach(input => {
+            input.addEventListener('input', calculateAndSaveSettings);
+        });
+
+        // Data Management Logic
+        function exportData() {
+            const dataToExport = { settings: appSettings, journal: journalData };
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'calore-data-export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        let deleteTimeout;
+        function confirmDeleteData() {
+            const btn = document.getElementById('delete-data-btn');
+            if(btn.innerText.includes('Delete All')) {
+                btn.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4"></i> Sure?`;
+                btn.classList.replace('bg-rose-50', 'bg-rose-500');
+                btn.classList.replace('text-rose-600', 'text-white');
+                lucide.createIcons();
+                
+                deleteTimeout = setTimeout(() => {
+                    btn.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4"></i> Delete All`;
+                    btn.classList.replace('bg-rose-500', 'bg-rose-50');
+                    btn.classList.replace('text-white', 'text-rose-600');
+                    lucide.createIcons();
+                }, 3000);
+            } else {
+                clearTimeout(deleteTimeout);
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // --- Insights UI Logic ---
+        function openInsights() {
+            let totalCal = 0, daysLogged = 0, totalEntriesCount = 0;
+            
+            for (const key in journalData) {
+                const day = journalData[key];
+                if (day.macros.calories > 0 || day.entriesHTML.includes('entry-')) {
+                    totalCal += day.macros.calories;
+                    daysLogged++;
+                    // Quick way to count entries: match IDs in the HTML string
+                    const entriesMatches = day.entriesHTML.match(/id="entry-/g);
+                    if (entriesMatches) totalEntriesCount += entriesMatches.length;
+                }
+            }
+
+            const avgCal = daysLogged > 0 ? Math.round(totalCal / daysLogged) : 0;
+
+            document.getElementById('stat-avg-cal').innerText = avgCal.toLocaleString();
+            document.getElementById('stat-total-entries').innerText = totalEntriesCount.toLocaleString();
+            document.getElementById('stat-total-cal').innerHTML = `${totalCal.toLocaleString()} <span class="text-lg font-bold text-emerald-800/50">kcal</span>`;
+
+            sharedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+            sharedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+            insightsSheet.classList.remove('translate-y-full');
+            insightsSheet.classList.add('translate-y-0');
+        }
+
+        document.getElementById('insights-toggle').addEventListener('click', (e) => { e.stopPropagation(); openInsights(); });
+
+        // --- Food Details & Edit Logic ---
+        function parseFoodData(el) {
+            const raw = el.getAttribute('data-food').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+            return JSON.parse(raw);
+        }
+
+        function openFoodSheet(id) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const data = parseFoodData(el);
+            const content = document.getElementById('food-sheet-content');
+            
+            content.innerHTML = `
+                <div class="flex justify-between items-start mb-6 mt-2">
+                    <h2 class="text-3xl font-extrabold text-textMain leading-tight tracking-tight">${data.foodName}</h2>
+                </div>
+                
+                <div class="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 mb-5 shadow-inner-soft">
+                    <h3 class="text-[13px] font-bold text-blue-800 mb-1.5 flex items-center gap-1.5"><i data-lucide="info" class="w-4 h-4"></i> AI Assumption</h3>
+                    <p class="text-[14px] font-medium text-blue-900 leading-snug">${data.assumedPortion || 'Standard portion estimated.'}</p>
+                </div>
+
+                <div class="bg-bg rounded-3xl p-5 mb-6 border border-borderLight/60 shadow-inner-soft">
+                    <h3 class="text-[11px] font-extrabold text-textSec uppercase tracking-widest mb-4">Nutrients</h3>
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="flex flex-col items-center justify-center py-3.5 bg-surface rounded-2xl shadow-sm border border-borderLight/30">
+                            <span class="text-[10px] font-bold text-textSec mb-1">KCAL</span>
+                            <span class="text-xl font-bold text-textMain">${data.calories}</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center py-3.5 bg-surface rounded-2xl shadow-sm border border-borderLight/30">
+                            <span class="text-[10px] font-bold text-orange-500 mb-1">PRO</span>
+                            <span class="text-xl font-bold text-textMain">${data.protein}g</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center py-3.5 bg-surface rounded-2xl shadow-sm border border-borderLight/30">
+                            <span class="text-[10px] font-bold text-purple-500 mb-1">CRB</span>
+                            <span class="text-xl font-bold text-textMain">${data.carbs}g</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center py-3.5 bg-surface rounded-2xl shadow-sm border border-borderLight/30">
+                            <span class="text-[10px] font-bold text-teal-500 mb-1">FAT</span>
+                            <span class="text-xl font-bold text-textMain">${data.fat}g</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 shadow-inner-soft">
+                        <h3 class="text-[13px] font-bold text-emerald-700 mb-2.5 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Benefits</h3>
+                        <ul class="text-[13px] font-medium text-emerald-900 space-y-2 pl-1 leading-snug">
+                            ${data.benefits.map(b => `<li>• ${b}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 shadow-inner-soft">
+                        <h3 class="text-[13px] font-bold text-rose-700 mb-2.5 flex items-center gap-1.5"><i data-lucide="alert-circle" class="w-4 h-4"></i> Cons</h3>
+                        <ul class="text-[13px] font-medium text-rose-900 space-y-2 pl-1 leading-snug">
+                            ${data.cons.map(c => `<li>• ${c}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="space-y-3.5">
+                    <button onclick="renderEditFood('${id}')" class="w-full bg-textMain text-white font-bold rounded-2xl py-4 hover:bg-black active:scale-95 smooth-transition flex justify-center items-center gap-2 shadow-lg shadow-black/10">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> Edit Macros manually
+                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="retryFood('${id}')" class="flex-1 bg-surface border-2 border-borderLight text-textMain font-bold rounded-2xl py-4 hover:bg-bg active:scale-95 smooth-transition flex justify-center items-center gap-2">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Retry
+                        </button>
+                        <button onclick="deleteFood('${id}')" class="flex-1 bg-rose-50 border-2 border-rose-100 text-rose-600 font-bold rounded-2xl py-4 hover:bg-rose-100 active:scale-95 smooth-transition flex justify-center items-center gap-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            lucide.createIcons();
+            sharedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+            sharedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+            foodSheet.classList.remove('translate-y-full');
+            foodSheet.classList.add('translate-y-0');
+        }
+
+        function renderEditFood(id) {
+            const el = document.getElementById(id);
+            const data = parseFoodData(el);
+            const content = document.getElementById('food-sheet-content');
+            
+            content.innerHTML = `
+                <h2 class="text-3xl font-extrabold text-textMain mb-7 mt-2 tracking-tight">Edit Entry</h2>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-textSec mb-2 ml-1">Food Name</label>
+                        <input type="text" id="edit-name" class="settings-input" value="${data.foodName}">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-bold text-textSec mb-2 ml-1">Calories</label>
+                            <input type="number" id="edit-cal" class="settings-input" value="${data.calories}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-textSec mb-2 ml-1">Protein (g)</label>
+                            <input type="number" id="edit-p" class="settings-input" value="${data.protein}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-textSec mb-2 ml-1">Carbs (g)</label>
+                            <input type="number" id="edit-c" class="settings-input" value="${data.carbs}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-textSec mb-2 ml-1">Fat (g)</label>
+                            <input type="number" id="edit-f" class="settings-input" value="${data.fat}">
+                        </div>
+                    </div>
+
+                    <div class="pt-6 flex gap-3">
+                         <button onclick="openFoodSheet('${id}')" class="flex-1 bg-surface border-2 border-borderLight text-textMain font-bold rounded-2xl py-4 hover:bg-bg active:scale-95 smooth-transition">
+                            Cancel
+                        </button>
+                        <button onclick="saveFoodEdit('${id}')" class="flex-[2] bg-textMain text-white font-bold rounded-2xl py-4 hover:bg-black active:scale-95 smooth-transition shadow-lg shadow-black/10">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function subtractMacros(data) {
+            currentDayData.macros.calories = Math.max(0, currentDayData.macros.calories - data.calories);
+            currentDayData.macros.protein = Math.max(0, currentDayData.macros.protein - data.protein);
+            currentDayData.macros.carbs = Math.max(0, currentDayData.macros.carbs - data.carbs);
+            currentDayData.macros.fat = Math.max(0, currentDayData.macros.fat - data.fat);
+        }
+
+        function saveFoodEdit(id) {
+            const el = document.getElementById(id);
+            const oldData = parseFoodData(el);
+            
+            const newData = {
+                ...oldData,
+                foodName: document.getElementById('edit-name').value || "Unknown",
+                calories: Number(document.getElementById('edit-cal').value) || 0,
+                protein: Number(document.getElementById('edit-p').value) || 0,
+                carbs: Number(document.getElementById('edit-c').value) || 0,
+                fat: Number(document.getElementById('edit-f').value) || 0,
+            };
+            
+            subtractMacros(oldData);
+            updateEntrySuccess(id, newData); 
+            updateTotals(newData); 
+            
+            closeAllSheets();
+        }
+
+        function deleteFood(id) {
+            const el = document.getElementById(id);
+            const data = parseFoodData(el);
+            
+            subtractMacros(data);
+            el.remove();
+            
+            currentDayData.entriesHTML = entriesContainer.innerHTML;
+            saveJournalData();
+            updateTotalsDisplay();
+            
+            closeAllSheets();
+        }
+
+        async function retryFood(id) {
+            const el = document.getElementById(id);
+            const data = parseFoodData(el);
+            
+            subtractMacros(data);
+            updateTotalsDisplay();
+            closeAllSheets();
+            
+            el.removeAttribute('onclick');
+            el.className = "flex items-center justify-between w-full group opacity-60 animate-fade-in p-3";
+            el.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-4 h-4 border-[2.5px] border-t-accent border-borderLight rounded-full animate-spin flex-shrink-0"></div>
+                    <div class="text-xl font-semibold text-textMain tracking-tight">${data.originalText}</div>
+                </div>
+                <div class="text-sm font-medium text-textSec">Retrying...</div>
+            `;
+            
+            try {
+                const newData = await fetchNutritionGroq(data.originalText);
+                updateEntrySuccess(id, newData);
+                updateTotals(newData);
+            } catch (error) {
+                console.error("Retry failed:", error);
+                updateEntryError(id, data.originalText);
+            }
+        }
+
+        // --- Date Navigation UI Logic ---
+        let isDateNavExpanded = false;
+
+        const updateDateUI = () => {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const diffDays = Math.round((activeDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+            
+            if (diffDays === 0) dateDisplayBtn.innerText = "Today";
+            else if (diffDays === -1) dateDisplayBtn.innerText = "Yesterday";
+            else dateDisplayBtn.innerText = activeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            if (isDateNavExpanded) {
+                prevDayBtn.classList.replace('opacity-0', 'opacity-100');
+                prevDayBtn.classList.replace('translate-x-4', 'translate-x-0');
+                prevDayBtn.classList.replace('pointer-events-none', 'pointer-events-auto');
+                
+                if (diffDays < 0) { 
+                    nextDayBtn.classList.replace('opacity-0', 'opacity-100');
+                    nextDayBtn.classList.replace('-translate-x-4', 'translate-x-0');
+                    nextDayBtn.classList.replace('pointer-events-none', 'pointer-events-auto');
+                } else {
+                    nextDayBtn.classList.replace('opacity-100', 'opacity-0');
+                    nextDayBtn.classList.replace('translate-x-0', '-translate-x-4');
+                    nextDayBtn.classList.replace('pointer-events-auto', 'pointer-events-none');
+                }
+            } else {
+                prevDayBtn.classList.replace('opacity-100', 'opacity-0');
+                prevDayBtn.classList.replace('translate-x-0', 'translate-x-4');
+                prevDayBtn.classList.replace('pointer-events-auto', 'pointer-events-none');
+                
+                nextDayBtn.classList.replace('opacity-100', 'opacity-0');
+                nextDayBtn.classList.replace('translate-x-0', '-translate-x-4');
+                nextDayBtn.classList.replace('pointer-events-auto', 'pointer-events-none');
+            }
+        };
+
+        const renderDay = () => {
+            currentDayData = getDayData(getDateKey(activeDate));
+            entriesContainer.innerHTML = currentDayData.entriesHTML;
+            updateTotalsDisplay();
+            updateDateUI();
+            lucide.createIcons();
+            
+            const rings = ['cal-ring', 'p-ring-svg', 'c-ring-svg', 'f-ring-svg'];
+            rings.forEach(id => document.getElementById(id).style.transition = 'none');
+            setTimeout(() => {
+                rings.forEach(id => document.getElementById(id).style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+                updateTotalsDisplay();
+            }, 50);
+        };
+
+        dateDisplayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isDateNavExpanded = !isDateNavExpanded;
+            updateDateUI();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (isDateNavExpanded && !e.target.closest('#date-nav-container')) {
+                isDateNavExpanded = false;
+                updateDateUI();
+            }
+        });
+
+        prevDayBtn.addEventListener('click', (e) => { e.stopPropagation(); activeDate.setDate(activeDate.getDate() - 1); renderDay(); });
+        nextDayBtn.addEventListener('click', (e) => { e.stopPropagation(); activeDate.setDate(activeDate.getDate() + 1); renderDay(); });
+
+        // --- Entry & Keyboard Logic ---
+        document.body.addEventListener('click', (e) => {
+            if (settingsSheet.classList.contains('translate-y-full') && 
+                foodSheet.classList.contains('translate-y-full') &&
+                insightsSheet.classList.contains('translate-y-full') &&
+               (e.target.tagName === 'MAIN' || e.target.tagName === 'BODY' || e.target.id === 'journal-area' || e.target.id === 'entries-container')) {
+                foodInput.focus();
+            }
+        });
+
+        foodInput.addEventListener('focus', () => {
+            macroRingContainer.classList.add('translate-y-[200%]', 'opacity-0');
+            quickActionBar.classList.remove('translate-y-full');
+        });
+
+        foodInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                macroRingContainer.classList.remove('translate-y-[200%]', 'opacity-0');
+                quickActionBar.classList.add('translate-y-full');
+            }, 150);
+        });
+
+        document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
+        });
+
+        foodInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && foodInput.value.trim() !== '') {
+                const text = foodInput.value.trim();
+                foodInput.value = '';
+                await processEntry(text);
+            }
+        });
+
+        const FS_CLIENT_ID = "77184fd07e3b439d83d2e35e7399ee89";
+        const FS_CLIENT_SECRET = "52a1577794ca4696a303927fb9e079ab";
+        let fsAccessToken = null;
+
+        async function getFSToken() {
+            if (fsAccessToken) return fsAccessToken;
+            const credentials = btoa(`${FS_CLIENT_ID}:${FS_CLIENT_SECRET}`);
+            
+            const proxyUrl = "https://corsproxy.io/?"; 
+            const targetUrl = "https://oauth.fatsecret.com/connect/token";
+            
+            const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${credentials}`,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'grant_type=client_credentials&scope=basic'
+            });
+            
+            if(!response.ok) throw new Error("FatSecret Auth failed");
+            const data = await response.json();
+            fsAccessToken = data.access_token;
+            return fsAccessToken;
+        }
+
+        async function searchFatSecret(query) {
+            const token = await getFSToken();
+            const proxyUrl = "https://corsproxy.io/?";
+            const targetUrl = `https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression=${encodeURIComponent(query)}&format=json&max_results=3`;
+            
+            const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if(!response.ok) throw new Error("FatSecret Search failed");
+            const data = await response.json();
+            
+            if(!data.foods || !data.foods.food) return "No matches found in database.";
+            
+            let foods = Array.isArray(data.foods.food) ? data.foods.food : [data.foods.food];
+            return foods.map(f => `${f.food_name}: ${f.food_description}`).join("\n");
+        }
+
+        async function extractSearchTermGroq(foodText) {
+            const endpoint = "https://api.groq.com/openai/v1/chat/completions";
+            const payload = {
+                model: "llama-3.1-8b-instant",
+                messages: [
+                    { role: "system", content: `Extract the main food ingredient/name to search in a database. Return ONLY JSON: {"searchQuery": "string"}` },
+                    { role: "user", content: foodText }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.1
+            };
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${appSettings.apiKey}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            return JSON.parse(data.choices[0].message.content);
+        }
+
+        async function processEntry(text) {
+            const id = createEntryPlaceholder(text);
+            const statusEl = document.getElementById(`${id}-status`);
+            const activeDateKey = getDateKey(activeDate);
+            try {
+                if(statusEl) statusEl.innerText = "Analyzing input...";
+                const searchData = await extractSearchTermGroq(text);
+                
+                if(statusEl) statusEl.innerText = "Querying FatSecret database...";
+                let fsData = "No database data available. Use general knowledge.";
+                try {
+                    fsData = await searchFatSecret(searchData.searchQuery);
+                } catch(e) {
+                    console.warn("FatSecret error, falling back to AI memory:", e);
+                }
+
+                if(statusEl) statusEl.innerText = "Calculating verified macros...";
+                const data = await fetchNutritionGroq(text, fsData);
+                
+                updateEntrySuccess(id, data);
+                updateTotals(data);
+                updateStreak(activeDateKey);
+            } catch (error) {
+                console.error("Analysis failed:", error);
+                updateEntryError(id, text);
+            }
+        }
+
+        function createEntryPlaceholder(text) {
+            const id = 'entry-' + Date.now();
+            const html = `
+                <div id="${id}" class="flex items-center justify-between w-full group opacity-60 animate-fade-in p-3">
+                    <div class="flex items-center gap-4">
+                        <div class="w-4 h-4 border-[3px] border-t-accent border-borderLight rounded-full animate-spin flex-shrink-0"></div>
+                        <div class="flex flex-col">
+                            <div class="text-xl font-semibold text-textMain tracking-tight">${text}</div>
+                            <div id="${id}-status" class="text-sm font-medium text-textSec mt-0.5">Initializing AI...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            entriesContainer.insertAdjacentHTML('beforeend', html);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            return id;
+        }
+
+        function updateEntrySuccess(id, data) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            const safeDataStr = JSON.stringify(data).replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+            
+            el.className = "flex flex-col w-full group opacity-100 animate-fade-in cursor-pointer hover:bg-black/[0.03] active:bg-black/[0.05] p-3.5 -mx-3.5 rounded-3xl smooth-transition";
+            el.setAttribute("onclick", `openFoodSheet('${id}')`);
+            el.setAttribute("data-food", safeDataStr);
+            
+            el.innerHTML = `
+                <div class="flex items-start justify-between w-full group pointer-events-none">
+                    <div class="flex items-start gap-4">
+                        <div class="mt-2.5 w-2 h-2 rounded-full bg-accent flex-shrink-0 shadow-[0_0_8px_rgba(245,166,35,0.4)]"></div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-bold text-textMain leading-tight tracking-tight">${data.foodName}</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[13px] font-semibold text-textSec">P: ${data.protein}g • C: ${data.carbs}g • F: ${data.fat}g</span>
+                                ${data.usedDatabase ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700 tracking-wider">VERIFIED</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xl font-bold text-textMain mt-0.5 whitespace-nowrap tracking-tight">
+                        ${data.calories} <span class="text-[13px] text-textSec font-semibold">kcal</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateEntryError(id, text) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = "flex items-center justify-between w-full group opacity-100 animate-fade-in p-3";
+            el.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0"></div>
+                    <div class="text-xl font-semibold text-textMain line-through decoration-rose-400/50 tracking-tight">${text}</div>
+                </div>
+                <div class="text-sm font-bold text-rose-500">Not recognized</div>
+            `;
+            currentDayData.entriesHTML = entriesContainer.innerHTML;
+            saveJournalData();
+        }
+
+        function updateTotals(data) {
+            currentDayData.macros.calories += data.calories;
+            currentDayData.macros.protein += data.protein;
+            currentDayData.macros.carbs += data.carbs;
+            currentDayData.macros.fat += data.fat;
+            
+            currentDayData.entriesHTML = entriesContainer.innerHTML;
+            saveJournalData();
+            updateTotalsDisplay();
+        }
+
+        function updateTotalsDisplay() {
+            const m = currentDayData.macros;
+            const goals = appSettings.goals;
+            
+            // Update texts
+            document.getElementById('cal-count').innerText = m.calories;
+            document.getElementById('p-count').innerText = m.protein + 'g';
+            document.getElementById('c-count').innerText = m.carbs + 'g';
+            document.getElementById('f-count').innerText = m.fat + 'g';
+
+            // Calculate and update all 4 rings
+            const calPercent = Math.min((m.calories / goals.calories) * 100, 100);
+            const pPercent = Math.min((m.protein / goals.protein) * 100, 100);
+            const cPercent = Math.min((m.carbs / goals.carbs) * 100, 100);
+            const fPercent = Math.min((m.fat / goals.fat) * 100, 100);
+
+            document.getElementById('cal-ring').style.strokeDashoffset = 100 - calPercent;
+            document.getElementById('p-ring-svg').style.strokeDashoffset = 100 - pPercent;
+            document.getElementById('c-ring-svg').style.strokeDashoffset = 100 - cPercent;
+            document.getElementById('f-ring-svg').style.strokeDashoffset = 100 - fPercent;
+        }
+
+        // --- GROQ API Integration ---
+        async function fetchNutritionGroq(foodText, fsData = "") {
+            const endpoint = "https://api.groq.com/openai/v1/chat/completions";
+            
+            const payload = {
+                model: "llama-3.1-8b-instant",
+                messages: [
+                    {
+                        role: "system",
+                        content: `You are a nutrition expert AI for a food journal. 
+                        We searched the FatSecret Database for verified facts. Database Options:
+                        """
+                        ${fsData}
+                        """
+                        Using the user's input to determine the portion, calculate the exact nutritional values based primarily on the database facts above.
+                        Respond ONLY with a JSON object. Use EXACTLY these keys: "foodName" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer), "benefits" (array of 2 short strings), "cons" (array of 2 short strings), "assumedPortion" (string explaining assumed size/weight based on the input), "usedDatabase" (boolean, true if you used FatSecret data). Example: {"foodName": "Apple", "calories": 95, "protein": 0, "carbs": 25, "fat": 0, "benefits": ["High in fiber", "Rich in antioxidants"], "cons": ["Contains natural sugars"], "assumedPortion": "1 medium apple (approx 182g)", "usedDatabase": true}`
+                    },
+                    {
+                        role: "user",
+                        content: foodText
+                    }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.2
+            };
+
+            const delays = [1000, 2000, 4000];
+            const maxRetries = delays.length;
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${appSettings.apiKey}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+                    const data = await response.json();
+                    let jsonText = data.choices[0].message.content;
+                    
+                    jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const parsed = JSON.parse(jsonText);
+                    
+                    return {
+                        originalText: foodText,
+                        foodName: parsed.foodName || parsed.food_name || parsed.name || "Unknown Food",
+                        calories: Number(parsed.calories) || 0,
+                        protein: Number(parsed.protein) || 0,
+                        carbs: Number(parsed.carbs) || 0,
+                        fat: Number(parsed.fat) || 0,
+                        benefits: Array.isArray(parsed.benefits) ? parsed.benefits : ["Provides energy"],
+                        cons: Array.isArray(parsed.cons) ? parsed.cons : ["None noted"],
+                        assumedPortion: parsed.assumedPortion || parsed.assumed_portion || "Standard portion size estimated.",
+                        usedDatabase: typeof parsed.usedDatabase === 'boolean' ? parsed.usedDatabase : !!fsData
+                    };
+
+                } catch (error) {
+                    if (attempt === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+                }
+            }
+        }
+
+        // Boot
+        loadSettings();
+        renderDay();
+
+    </script>
+</body>
+</html>
