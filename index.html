@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Calorie Journal</title>
     
+    <!-- PWA Settings & App Icons -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#F9F8F6">
+    <link rel="icon" type="image/png" href="/food.png">
+    <link rel="apple-touch-icon" href="/food.png">
+    
     <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -320,9 +326,21 @@
                 <div class="pt-5 border-t border-borderLight/60 mt-4">
                     <label class="block text-sm font-bold text-textSec mb-2 ml-1">Groq API Key (AI Engine)</label>
                     <input type="password" id="set-api-key" class="settings-input text-sm" placeholder="Optional Local Override">
-                    <p class="text-[12px] font-medium text-textSec mt-2.5 ml-1">Locally encrypted. Defaults to Vercel embedded key if blank.</p>
+                    
+                    <label class="block text-sm font-bold text-textSec mb-2 ml-1 mt-4">USDA API Key (Nutrition Facts)</label>
+                    <input type="password" id="set-usda-key" class="settings-input text-sm" placeholder="Optional Local Override">
+                    <p class="text-[12px] font-medium text-textSec mt-2.5 ml-1">Locally encrypted. Defaults to Vercel embedded keys if blank.</p>
                 </div>
                 
+                <div class="pt-5 mt-4 border-t border-borderLight/60">
+                    <div class="flex justify-between items-center mb-2 ml-1">
+                        <label class="text-sm font-bold text-textSec">Estimation Bias</label>
+                        <span id="bias-value-display" class="text-xs font-bold text-textMain px-2 py-1 bg-borderLight/60 rounded-lg">0%</span>
+                    </div>
+                    <input type="range" id="set-bias" min="-25" max="25" step="5" class="w-full accent-accent">
+                    <p class="text-[11px] font-medium text-textSec mt-1.5 ml-1">Have the AI intentionally over/under estimate your macros.</p>
+                </div>
+
                 <div class="pt-5 mt-4 border-t border-borderLight/60">
                     <h3 class="text-sm font-bold text-textSec mb-3 ml-1">Data Management</h3>
                     <div class="flex gap-3">
@@ -378,11 +396,14 @@
         const ENV_GROQ_API_KEY = "YOUR_VERCEL_GROQ_API_KEY"; 
         const ENV_FATSECRET_CLIENT_ID = "YOUR_VERCEL_FATSECRET_CLIENT_ID";
         const ENV_FATSECRET_CLIENT_SECRET = "YOUR_VERCEL_FATSECRET_CLIENT_SECRET";
+        const ENV_USDA_API_KEY = "YOUR_VERCEL_USDA_API_KEY";
 
         // --- App State & Data Management ---
         let appSettings = {
             name: "", age: "", sex: "male", weight: "", height: "", activity: "1.2",
             apiKey: ENV_GROQ_API_KEY,
+            usdaKey: ENV_USDA_API_KEY,
+            estimationBias: 0,
             goals: { calories: 2000, protein: 120, carbs: 200, fat: 65 },
             streakCount: 0,
             lastStreakDate: null
@@ -397,9 +418,13 @@
             if (saved) {
                 appSettings = { ...appSettings, ...JSON.parse(saved) };
                 if (!appSettings.apiKey) appSettings.apiKey = ENV_GROQ_API_KEY;
+                if (!appSettings.usdaKey) appSettings.usdaKey = ENV_USDA_API_KEY;
+                if (typeof appSettings.estimationBias === 'undefined') appSettings.estimationBias = 0;
             }
             updateStreakDisplay();
             document.getElementById('cal-goal-display').innerText = appSettings.goals.calories;
+            document.getElementById('set-bias').value = appSettings.estimationBias || 0;
+            document.getElementById('bias-value-display').innerText = (appSettings.estimationBias > 0 ? "+" : "") + (appSettings.estimationBias || 0) + "%";
         }
         
         function saveSettings() {
@@ -496,6 +521,7 @@
 
         sharedBackdrop.addEventListener('click', closeAllSheets);
 
+        // --- Drag-to-Close Setup ---
         function setupDragToClose(sheetId) {
             const sheet = document.getElementById(sheetId);
             const handle = sheet.querySelector('.sheet-closer');
@@ -547,6 +573,9 @@
                 document.getElementById('set-height').value = appSettings.height;
                 document.getElementById('set-activity').value = appSettings.activity;
                 document.getElementById('set-api-key').value = appSettings.apiKey === ENV_GROQ_API_KEY ? "" : appSettings.apiKey;
+                document.getElementById('set-usda-key').value = appSettings.usdaKey === ENV_USDA_API_KEY ? "" : appSettings.usdaKey;
+                document.getElementById('set-bias').value = appSettings.estimationBias || 0;
+                document.getElementById('bias-value-display').innerText = (appSettings.estimationBias > 0 ? "+" : "") + (appSettings.estimationBias || 0) + "%";
 
                 sharedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
                 sharedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
@@ -570,6 +599,12 @@
             
             const keyInput = document.getElementById('set-api-key').value.trim();
             appSettings.apiKey = keyInput || ENV_GROQ_API_KEY;
+            
+            const usdaInput = document.getElementById('set-usda-key').value.trim();
+            appSettings.usdaKey = usdaInput || ENV_USDA_API_KEY;
+
+            appSettings.estimationBias = parseInt(document.getElementById('set-bias').value) || 0;
+            document.getElementById('bias-value-display').innerText = (appSettings.estimationBias > 0 ? "+" : "") + appSettings.estimationBias + "%";
 
             if (appSettings.weight && appSettings.height && appSettings.age) {
                 let w = parseFloat(appSettings.weight);
@@ -922,8 +957,20 @@
 
         dateDisplayBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            isDateNavExpanded = !isDateNavExpanded;
-            updateDateUI();
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            // If we are not on today, jump to today!
+            if (activeDate.getTime() !== today.getTime()) {
+                activeDate = new Date();
+                activeDate.setHours(0,0,0,0);
+                isDateNavExpanded = false; // Auto-collapse navigation
+                renderDay();
+            } else {
+                // If we are already on today, toggle the navigation chevrons
+                isDateNavExpanded = !isDateNavExpanded;
+                updateDateUI();
+            }
         });
 
         // Close Date Nav or FAB when clicking outside
@@ -953,18 +1000,6 @@
             }
         });
 
-        foodInput.addEventListener('focus', () => {
-            macroRingContainer.classList.add('translate-y-[200%]', 'opacity-0');
-            fabContainer.classList.add('translate-y-[200%]', 'opacity-0');
-        });
-
-        foodInput.addEventListener('blur', () => {
-            setTimeout(() => {
-                macroRingContainer.classList.remove('translate-y-[200%]', 'opacity-0');
-                fabContainer.classList.remove('translate-y-[200%]', 'opacity-0');
-            }, 150);
-        });
-
         foodInput.addEventListener('keydown', async (e) => {
             if (e.key === 'Enter' && foodInput.value.trim() !== '') {
                 const text = foodInput.value.trim();
@@ -974,6 +1009,10 @@
         });
 
         // Use standard Environmental references for Vercel
+        const FS_CLIENT_ID = "77184fd07e3b439d83d2e35e7399ee89";
+        const FS_CLIENT_SECRET = "52a1577794ca4696a303927fb9e079ab";
+        let fsAccessToken = null;
+
         async function getFSToken() {
             if (fsAccessToken) return fsAccessToken;
             const credentials = btoa(`${ENV_FATSECRET_CLIENT_ID}:${ENV_FATSECRET_CLIENT_SECRET}`);
@@ -1018,6 +1057,29 @@
             return foods.map(f => `${f.food_name}: ${f.food_description}`).join("\n");
         }
 
+        async function searchUSDA(query) {
+            // Fallback to user provided key if the environment variable hasn't been injected yet
+            const key = appSettings.usdaKey === "YOUR_VERCEL_USDA_API_KEY" ? "QADxyoJFhlre6IeQW8nhsmcBg7VY1sapFyW9STbZ" : appSettings.usdaKey;
+            const targetUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&api_key=${key}&pageSize=2`;
+            try {
+                const response = await fetch(targetUrl);
+                if(!response.ok) return "";
+                const data = await response.json();
+                if(!data.foods || data.foods.length === 0) return "";
+                
+                return data.foods.map(f => {
+                    let text = `USDA Food: ${f.description}`;
+                    if (f.servingSize) text += ` (Serving: ${f.servingSize}${f.servingSizeUnit})`;
+                    const nutrients = f.foodNutrients.filter(n => ['Energy', 'Protein', 'Carbohydrate, by difference', 'Total lipid (fat)'].includes(n.nutrientName));
+                    text += " - " + nutrients.map(n => `${n.nutrientName}: ${n.value}${n.unitName}`).join(', ');
+                    return text;
+                }).join("\n");
+            } catch (e) {
+                console.warn("USDA API error:", e);
+                return "";
+            }
+        }
+
         async function extractSearchTermGroq(foodText) {
             const endpoint = "https://api.groq.com/openai/v1/chat/completions";
             const payload = {
@@ -1046,16 +1108,16 @@
                 if(statusEl) statusEl.innerText = "Analyzing input...";
                 const searchData = await extractSearchTermGroq(text);
                 
-                if(statusEl) statusEl.innerText = "Querying FatSecret database...";
-                let fsData = "No database data available. Use general knowledge.";
-                try {
-                    fsData = await searchFatSecret(searchData.searchQuery);
-                } catch(e) {
-                    console.warn("FatSecret error, falling back to AI memory:", e);
-                }
+                if(statusEl) statusEl.innerText = "Querying Databases (FatSecret & USDA)...";
+                let fsData = "", usdaData = "";
+                
+                try { fsData = await searchFatSecret(searchData.searchQuery); } catch(e) { console.warn("FatSecret Error:", e); }
+                try { usdaData = await searchUSDA(searchData.searchQuery); } catch(e) { console.warn("USDA Error:", e); }
+
+                const combinedDB = `FatSecret Database Data:\n${fsData || 'None'}\n\nUSDA Database Data:\n${usdaData || 'None'}`;
 
                 if(statusEl) statusEl.innerText = "Calculating verified macros...";
-                const data = await fetchNutritionGroq(text, fsData);
+                const data = await fetchNutritionGroq(text, combinedDB);
                 
                 updateEntrySuccess(id, data);
                 updateTotals(data);
@@ -1162,7 +1224,13 @@
         }
 
         // --- GROQ API Integration ---
-        async function fetchNutritionGroq(foodText, fsData = "") {
+        async function fetchNutritionGroq(foodText, combinedDB = "") {
+            let biasInstruction = "";
+            if (appSettings.estimationBias !== 0) {
+                const direction = appSettings.estimationBias > 0 ? "OVERESTIMATE" : "UNDERESTIMATE";
+                biasInstruction = `\n\nCRITICAL INSTRUCTION: You MUST ${direction} the final calorie and macro amounts by exactly ${Math.abs(appSettings.estimationBias)}%. Perform the normal factual calculation first, then strictly apply this ${appSettings.estimationBias}% modifier to the final Calories, Protein, Carbs, and Fat before returning the JSON.`;
+            }
+
             const endpoint = "https://api.groq.com/openai/v1/chat/completions";
             
             const payload = {
@@ -1171,12 +1239,12 @@
                     {
                         role: "system",
                         content: `You are a nutrition expert AI for a food journal. 
-                        We searched the FatSecret Database for verified facts. Database Options:
+                        We searched verified Databases. Database Options:
                         """
-                        ${fsData}
+                        ${combinedDB}
                         """
-                        Using the user's input to determine the portion, calculate the exact nutritional values based primarily on the database facts above.
-                        Respond ONLY with a JSON object. Use EXACTLY these keys: "foodName" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer), "benefits" (array of 2 short strings), "cons" (array of 2 short strings), "assumedPortion" (string explaining assumed size/weight based on the input), "usedDatabase" (boolean, true if you used FatSecret data). Example: {"foodName": "Apple", "calories": 95, "protein": 0, "carbs": 25, "fat": 0, "benefits": ["High in fiber", "Rich in antioxidants"], "cons": ["Contains natural sugars"], "assumedPortion": "1 medium apple (approx 182g)", "usedDatabase": true}`
+                        Using the user's input to determine the portion, calculate the exact nutritional values based primarily on the database facts above.${biasInstruction}
+                        Respond ONLY with a JSON object. Use EXACTLY these keys: "foodName" (string), "calories" (integer), "protein" (integer), "carbs" (integer), "fat" (integer), "benefits" (array of 2 short strings), "cons" (array of 2 short strings), "assumedPortion" (string explaining assumed size/weight based on the input), "usedDatabase" (boolean, true if you used database data). Example: {"foodName": "Apple", "calories": 95, "protein": 0, "carbs": 25, "fat": 0, "benefits": ["High in fiber", "Rich in antioxidants"], "cons": ["Contains natural sugars"], "assumedPortion": "1 medium apple (approx 182g)", "usedDatabase": true}`
                     },
                     {
                         role: "user",
@@ -1227,6 +1295,15 @@
                     await new Promise(resolve => setTimeout(resolve, delays[attempt]));
                 }
             }
+        }
+
+        // --- PWA Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker safely registered!', reg.scope))
+                    .catch(err => console.error('Service Worker registration failed: ', err));
+            });
         }
 
         // Boot
