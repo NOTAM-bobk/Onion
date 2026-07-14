@@ -1,0 +1,17 @@
+{
+  "name": "Calorie Journal",
+  "short_name": "Calorie",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F8F6",
+  "theme_color": "#F9F8F6",
+  "description": "A smart AI-powered food tracking journal.",
+  "icons": [
+    {
+      "src": "/food.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
