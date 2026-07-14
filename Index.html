@@ -23,7 +23,7 @@
                     colors: {
                         bg: '#F9F8F6',
                         surface: '#FFFFFF',
-                        accent: '#F5A623', /* Sophisticated golden/orange */
+                        accent: '#F5A623',
                         accentSoft: '#FFF2DF',
                         textMain: '#1A1A1C',
                         textSec: '#8E8E93',
@@ -42,7 +42,6 @@
     </script>
 
     <style>
-        /* Mobile & App Optimizations */
         body {
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
@@ -91,7 +90,6 @@
             box-shadow: 0 0 0 4px rgba(245,166,35,0.1);
         }
         
-        /* Draggable handle styling */
         .drag-handle { touch-action: pan-x; } 
     </style>
 </head>
@@ -103,7 +101,7 @@
             <i data-lucide="pie-chart" class="w-5 h-5 text-textSec"></i>
         </button>
         
-        <!-- Updated closer, grouped Date Navigation -->
+        <!-- Grouped Date Navigation -->
         <div id="date-nav-container" class="relative flex items-center justify-center h-10 w-48">
             <button id="prev-day-btn" class="absolute left-0 opacity-0 translate-x-4 pointer-events-none bg-surface/90 backdrop-blur-xl border border-white/60 p-2 rounded-full text-textSec hover:text-textMain shadow-sm hover:shadow-md active:scale-90 smooth-transition cursor-pointer z-0">
                 <i data-lucide="chevron-left" class="w-5 h-5"></i>
@@ -144,7 +142,39 @@
         </div>
     </main>
 
-    <!-- Footer Ring -->
+    <!-- Floating Action Button (FAB) Menu -->
+    <div id="fab-container" class="fixed bottom-36 right-6 z-40 flex flex-col items-center gap-3 smooth-transition duration-300">
+        <!-- Pop-out buttons (hidden by default) -->
+        <div id="fab-menu" class="flex flex-col gap-3 transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-none origin-bottom">
+            <!-- Voice -->
+            <button class="w-12 h-12 bg-surface/90 backdrop-blur-xl border border-white shadow-ios rounded-2xl flex flex-col items-center justify-center text-textSec hover:text-textMain active:scale-95 smooth-transition relative group">
+                <i data-lucide="mic" class="w-5 h-5"></i>
+                <span class="absolute right-14 bg-surface/90 px-2 py-1 rounded text-[10px] font-bold text-textMain shadow-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Voice</span>
+            </button>
+            <!-- Barcode -->
+            <button class="w-12 h-12 bg-surface/90 backdrop-blur-xl border border-white shadow-ios rounded-2xl flex flex-col items-center justify-center text-textSec hover:text-textMain active:scale-95 smooth-transition relative group">
+                <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+                <span class="absolute right-14 bg-surface/90 px-2 py-1 rounded text-[10px] font-bold text-textMain shadow-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Scan</span>
+            </button>
+            <!-- Camera -->
+            <button class="w-12 h-12 bg-surface/90 backdrop-blur-xl border border-white shadow-ios rounded-2xl flex flex-col items-center justify-center text-textSec hover:text-textMain active:scale-95 smooth-transition relative group">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+                <span class="absolute right-14 bg-surface/90 px-2 py-1 rounded text-[10px] font-bold text-textMain shadow-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Camera</span>
+            </button>
+            <!-- Saved -->
+            <button class="w-12 h-12 bg-surface/90 backdrop-blur-xl border border-white shadow-ios rounded-2xl flex flex-col items-center justify-center text-textSec hover:text-textMain active:scale-95 smooth-transition relative group">
+                <i data-lucide="bookmark" class="w-5 h-5"></i>
+                <span class="absolute right-14 bg-surface/90 px-2 py-1 rounded text-[10px] font-bold text-textMain shadow-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Saved</span>
+            </button>
+        </div>
+        
+        <!-- Square Plus Button -->
+        <button id="fab-toggle" class="w-[52px] h-[52px] bg-textMain text-surface rounded-2xl shadow-ios flex items-center justify-center hover:bg-black active:scale-95 smooth-transition z-10 border border-black/10">
+            <i data-lucide="plus" class="w-6 h-6 transition-transform duration-300" id="fab-icon"></i>
+        </button>
+    </div>
+
+    <!-- Footer Macro Ring -->
     <div id="macro-ring-container" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[94%] max-w-[420px] bg-surface/85 backdrop-blur-2xl rounded-full shadow-ios z-40 flex items-center justify-between px-6 py-3.5 border border-white/80 cursor-default smooth-transition hover:-translate-y-1 duration-300">
         <!-- Main Oval Background Outline -->
         <svg width="100%" height="100%" class="absolute left-0 top-0 pointer-events-none rounded-full">
@@ -162,7 +192,6 @@
             
             <!-- Macro Rings -->
             <div class="flex gap-3">
-                <!-- Protein -->
                 <div class="flex flex-col items-center">
                     <span class="text-[9.5px] font-extrabold text-orange-500 mb-0.5">PRO</span>
                     <div class="relative w-11 h-11 flex items-center justify-center">
@@ -173,7 +202,6 @@
                         <span class="text-[11px] font-bold text-textMain" id="p-count">0g</span>
                     </div>
                 </div>
-                <!-- Carbs -->
                 <div class="flex flex-col items-center">
                     <span class="text-[9.5px] font-extrabold text-purple-500 mb-0.5">CRB</span>
                     <div class="relative w-11 h-11 flex items-center justify-center">
@@ -184,7 +212,6 @@
                         <span class="text-[11px] font-bold text-textMain" id="c-count">0g</span>
                     </div>
                 </div>
-                <!-- Fat -->
                 <div class="flex flex-col items-center">
                     <span class="text-[9.5px] font-extrabold text-teal-500 mb-0.5">FAT</span>
                     <div class="relative w-11 h-11 flex items-center justify-center">
@@ -204,7 +231,6 @@
 
     <!-- Insights Bottom Sheet -->
     <div id="insights-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
-        <!-- Drag down handle -->
         <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
             <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
         </div>
@@ -247,7 +273,6 @@
 
     <!-- Settings Bottom Sheet -->
     <div id="settings-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
-        <!-- Drag down handle -->
         <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
             <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
         </div>
@@ -294,8 +319,8 @@
 
                 <div class="pt-5 border-t border-borderLight/60 mt-4">
                     <label class="block text-sm font-bold text-textSec mb-2 ml-1">Groq API Key (AI Engine)</label>
-                    <input type="password" id="set-api-key" class="settings-input text-sm" placeholder="gsk_...">
-                    <p class="text-[12px] font-medium text-textSec mt-2.5 ml-1">Locally encrypted. Defaults to embedded key if blank.</p>
+                    <input type="password" id="set-api-key" class="settings-input text-sm" placeholder="Optional Local Override">
+                    <p class="text-[12px] font-medium text-textSec mt-2.5 ml-1">Locally encrypted. Defaults to Vercel embedded key if blank.</p>
                 </div>
                 
                 <div class="pt-5 mt-4 border-t border-borderLight/60">
@@ -334,7 +359,6 @@
 
     <!-- Food Details Bottom Sheet -->
     <div id="food-sheet" class="fixed bottom-0 left-0 right-0 h-[88vh] bg-surface rounded-t-[36px] z-[60] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col border-t border-white/50">
-        <!-- Drag down handle -->
         <div class="w-full pt-5 pb-3 flex justify-center cursor-grab active:cursor-grabbing drag-handle sheet-closer">
             <div class="w-14 h-1.5 bg-gray-300 rounded-full pointer-events-none"></div>
         </div>
@@ -344,44 +368,21 @@
         </div>
     </div>
 
-    <!-- Quick Action Bar (Hidden by default, shown on keyboard focus) -->
-    <div id="quick-action-bar" class="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-borderLight px-6 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-between items-center z-50 transform translate-y-full transition-transform duration-300 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
-            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
-                <i data-lucide="bookmark" class="w-5 h-5"></i>
-            </div>
-            <span class="text-[10px] font-bold">Saved</span>
-        </button>
-        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
-            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
-                <i data-lucide="camera" class="w-5 h-5"></i>
-            </div>
-            <span class="text-[10px] font-bold">Camera</span>
-        </button>
-        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
-            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
-                <i data-lucide="scan-barcode" class="w-5 h-5"></i>
-            </div>
-            <span class="text-[10px] font-bold">Barcode</span>
-        </button>
-        <button class="flex flex-col items-center gap-1.5 text-textSec hover:text-textMain transition-colors quick-action-btn">
-            <div class="w-11 h-11 rounded-full bg-bg border border-borderLight flex items-center justify-center shadow-inner-soft">
-                <i data-lucide="mic" class="w-5 h-5"></i>
-            </div>
-            <span class="text-[10px] font-bold">Voice</span>
-        </button>
-    </div>
-
     <!-- Application Logic -->
     <script>
         lucide.createIcons();
 
+        // --- VERCEL DEPLOYMENT ENVIRONMENT VARIABLES ---
+        // Replace these placeholder strings with your actual Vercel environment variables or build steps.
+        // E.g. in Next.js or Vite: const ENV_GROQ_API_KEY = process.env.GROQ_API_KEY;
+        const ENV_GROQ_API_KEY = "YOUR_VERCEL_GROQ_API_KEY"; 
+        const ENV_FATSECRET_CLIENT_ID = "YOUR_VERCEL_FATSECRET_CLIENT_ID";
+        const ENV_FATSECRET_CLIENT_SECRET = "YOUR_VERCEL_FATSECRET_CLIENT_SECRET";
+
         // --- App State & Data Management ---
-        const DEFAULT_GROQ_KEY = "";
-        
         let appSettings = {
             name: "", age: "", sex: "male", weight: "", height: "", activity: "1.2",
-            apiKey: DEFAULT_GROQ_KEY,
+            apiKey: ENV_GROQ_API_KEY,
             goals: { calories: 2000, protein: 120, carbs: 200, fat: 65 },
             streakCount: 0,
             lastStreakDate: null
@@ -395,7 +396,7 @@
             const saved = localStorage.getItem('caloreSettings');
             if (saved) {
                 appSettings = { ...appSettings, ...JSON.parse(saved) };
-                if (!appSettings.apiKey) appSettings.apiKey = DEFAULT_GROQ_KEY;
+                if (!appSettings.apiKey) appSettings.apiKey = ENV_GROQ_API_KEY;
             }
             updateStreakDisplay();
             document.getElementById('cal-goal-display').innerText = appSettings.goals.calories;
@@ -480,7 +481,7 @@
         const insightsSheet = document.getElementById('insights-sheet');
         const foodSheet = document.getElementById('food-sheet');
         const macroRingContainer = document.getElementById('macro-ring-container');
-        const quickActionBar = document.getElementById('quick-action-bar');
+        const fabContainer = document.getElementById('fab-container');
 
         // --- Drag-to-Close Sheet Logic ---
         function closeAllSheets() {
@@ -545,7 +546,7 @@
                 document.getElementById('set-weight').value = appSettings.weight;
                 document.getElementById('set-height').value = appSettings.height;
                 document.getElementById('set-activity').value = appSettings.activity;
-                document.getElementById('set-api-key').value = appSettings.apiKey === DEFAULT_GROQ_KEY ? "" : appSettings.apiKey;
+                document.getElementById('set-api-key').value = appSettings.apiKey === ENV_GROQ_API_KEY ? "" : appSettings.apiKey;
 
                 sharedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
                 sharedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
@@ -568,7 +569,7 @@
             appSettings.activity = document.getElementById('set-activity').value;
             
             const keyInput = document.getElementById('set-api-key').value.trim();
-            appSettings.apiKey = keyInput || DEFAULT_GROQ_KEY;
+            appSettings.apiKey = keyInput || ENV_GROQ_API_KEY;
 
             if (appSettings.weight && appSettings.height && appSettings.age) {
                 let w = parseFloat(appSettings.weight);
@@ -634,7 +635,6 @@
                 if (day.macros.calories > 0 || day.entriesHTML.includes('entry-')) {
                     totalCal += day.macros.calories;
                     daysLogged++;
-                    // Quick way to count entries: match IDs in the HTML string
                     const entriesMatches = day.entriesHTML.match(/id="entry-/g);
                     if (entriesMatches) totalEntriesCount += entriesMatches.length;
                 }
@@ -653,6 +653,26 @@
         }
 
         document.getElementById('insights-toggle').addEventListener('click', (e) => { e.stopPropagation(); openInsights(); });
+
+        // --- Floating Action Button (FAB) Logic ---
+        const fabToggle = document.getElementById('fab-toggle');
+        const fabMenu = document.getElementById('fab-menu');
+        const fabIcon = document.getElementById('fab-icon');
+        let isFabOpen = false;
+
+        fabToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isFabOpen = !isFabOpen;
+            if (isFabOpen) {
+                fabMenu.classList.remove('translate-y-8', 'opacity-0', 'pointer-events-none');
+                fabMenu.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+                fabIcon.style.transform = 'rotate(45deg)';
+            } else {
+                fabMenu.classList.add('translate-y-8', 'opacity-0', 'pointer-events-none');
+                fabMenu.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+                fabIcon.style.transform = 'rotate(0deg)';
+            }
+        });
 
         // --- Food Details & Edit Logic ---
         function parseFoodData(el) {
@@ -906,10 +926,17 @@
             updateDateUI();
         });
 
+        // Close Date Nav or FAB when clicking outside
         document.addEventListener('click', (e) => {
             if (isDateNavExpanded && !e.target.closest('#date-nav-container')) {
                 isDateNavExpanded = false;
                 updateDateUI();
+            }
+            if (isFabOpen && !e.target.closest('#fab-menu') && e.target !== fabToggle) {
+                isFabOpen = false;
+                fabMenu.classList.add('translate-y-8', 'opacity-0', 'pointer-events-none');
+                fabMenu.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+                fabIcon.style.transform = 'rotate(0deg)';
             }
         });
 
@@ -928,19 +955,14 @@
 
         foodInput.addEventListener('focus', () => {
             macroRingContainer.classList.add('translate-y-[200%]', 'opacity-0');
-            quickActionBar.classList.remove('translate-y-full');
+            fabContainer.classList.add('translate-y-[200%]', 'opacity-0');
         });
 
         foodInput.addEventListener('blur', () => {
             setTimeout(() => {
                 macroRingContainer.classList.remove('translate-y-[200%]', 'opacity-0');
-                quickActionBar.classList.add('translate-y-full');
+                fabContainer.classList.remove('translate-y-[200%]', 'opacity-0');
             }, 150);
-        });
-
-        document.querySelectorAll('.quick-action-btn').forEach(btn => {
-            btn.addEventListener('mousedown', (e) => e.preventDefault());
-            btn.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
         });
 
         foodInput.addEventListener('keydown', async (e) => {
@@ -951,13 +973,10 @@
             }
         });
 
-        const FS_CLIENT_ID = "77184fd07e3b439d83d2e35e7399ee89";
-        const FS_CLIENT_SECRET = "52a1577794ca4696a303927fb9e079ab";
-        let fsAccessToken = null;
-
+        // Use standard Environmental references for Vercel
         async function getFSToken() {
             if (fsAccessToken) return fsAccessToken;
-            const credentials = btoa(`${FS_CLIENT_ID}:${FS_CLIENT_SECRET}`);
+            const credentials = btoa(`${ENV_FATSECRET_CLIENT_ID}:${ENV_FATSECRET_CLIENT_SECRET}`);
             
             const proxyUrl = "https://corsproxy.io/?"; 
             const targetUrl = "https://oauth.fatsecret.com/connect/token";
